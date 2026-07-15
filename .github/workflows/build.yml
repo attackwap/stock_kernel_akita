@@ -1,1 +1,49 @@
 
+name: Build Pixel 8a Kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            git curl wget flex bison bc \
+            build-essential zip unzip rsync \
+            libssl-dev libelf-dev pahole \
+            python3 python-is-python3
+
+      - name: Show source info
+        run: |
+          pwd
+          ls -la
+
+      - name: Build kernel
+        run: |
+          chmod +x build/build.sh || true
+
+          BUILD_CONFIG=common/build.config.gki.aarch64 \
+          build/build.sh 2>&1 | tee build.log
+
+      - name: Collect artifacts
+        run: |
+          mkdir -p out_artifacts
+
+          find . -name "Image*" -exec cp {} out_artifacts/ \; || true
+          find . -name "*.ko" -exec cp {} out_artifacts/ \; || true
+
+          cp build.log out_artifacts/
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixel8a-kernel
+          path: out_artifacts/
