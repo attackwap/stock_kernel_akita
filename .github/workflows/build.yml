@@ -8,49 +8,38 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Show system info
+      - name: Free Disk Space
         run: |
-          uname -a
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/hostedtoolcache
+
           df -h
-          free -h
-          nproc
 
-      - name: Install dependencies
+      - name: Install packages
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            git curl wget unzip zip \
-            bc bison flex \
-            build-essential \
-            clang lld llvm \
+          sudo apt update
+          sudo apt install -y \
+            git curl bc bison flex \
+            zip unzip rsync \
             python3 python3-pip \
-            libssl-dev libelf-dev \
-            cpio rsync \
-            repo
+            clang lld llvm
 
-      - name: Configure git
+      - name: Clone sources
         run: |
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
+          chmod +x scripts/clone.sh
+          ./scripts/clone.sh
 
-      - name: Prepare workspace
+      - name: Build
         run: |
-          mkdir -p $GITHUB_WORKSPACE/kernel
-          cd $GITHUB_WORKSPACE/kernel
-          pwd
+          chmod +x scripts/build.sh
+          ./scripts/build.sh
 
-      - name: Placeholder
-        run: |
-          echo "Kernel source belum disinkronkan."
-          echo "Workflow berhasil berjalan."
-          mkdir -p out
-          echo "Waiting for source release..." > out/README.txt
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: pixel8a-kernel
-          path: kernel/out
+          name: kernel-output
+          path: out/
